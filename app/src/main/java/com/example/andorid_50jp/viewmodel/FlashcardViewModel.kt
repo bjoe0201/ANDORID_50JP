@@ -23,7 +23,7 @@ data class FlashcardUiState(
     val isShuffle: Boolean = false,
     val showRomaji: Boolean = true,
     val audioEnabled: Boolean = true,
-    val wordAudioEnabled: Boolean = false,
+    val autoPlayEnabled: Boolean = false,
     val navDirection: Int = 1,  // 1 = forward, -1 = backward
     val ttsAvailable: Boolean = false,
     val ttsError: Boolean = false
@@ -104,19 +104,18 @@ class FlashcardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun toggleWordAudio() {
-        _uiState.update { it.copy(wordAudioEnabled = !it.wordAudioEnabled) }
+    fun toggleAutoPlay() {
+        _uiState.update { it.copy(autoPlayEnabled = !it.autoPlayEnabled) }
     }
 
-    fun playCurrentCardAudio() {
+    fun playCurrentCardAudio(force: Boolean = false) {
         val state = _uiState.value
         if (!state.audioEnabled || !state.ttsAvailable) return
+        if (!force && !state.autoPlayEnabled) return
         val item = state.currentItem
         val char = if (state.mode == KanaMode.HIRAGANA) item.hira else item.kata
         speak(char, flush = true)
-        if (state.wordAudioEnabled) {
-            speak(item.word, flush = false)
-        }
+        speak(item.word, flush = false)
     }
 
     private fun speak(text: String, flush: Boolean) {

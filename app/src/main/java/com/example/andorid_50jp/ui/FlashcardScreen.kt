@@ -123,12 +123,12 @@ private fun PortraitLayout(
             SettingsPanel(
                 showRomaji = state.showRomaji,
                 isShuffle = state.isShuffle,
-                wordAudioEnabled = state.wordAudioEnabled,
+                autoPlayEnabled = state.autoPlayEnabled,
                 currentIndex = state.currentIndex,
                 total = state.displayOrder.size,
                 onToggleRomaji = vm::toggleRomaji,
                 onToggleShuffle = vm::toggleShuffle,
-                onToggleWordAudio = vm::toggleWordAudio
+                onToggleAutoPlay = vm::toggleAutoPlay
             )
 
             TtsWarning(show = state.ttsError)
@@ -189,12 +189,12 @@ private fun LandscapeLayout(
             SettingsPanel(
                 showRomaji = state.showRomaji,
                 isShuffle = state.isShuffle,
-                wordAudioEnabled = state.wordAudioEnabled,
+                autoPlayEnabled = state.autoPlayEnabled,
                 currentIndex = state.currentIndex,
                 total = state.displayOrder.size,
                 onToggleRomaji = vm::toggleRomaji,
                 onToggleShuffle = vm::toggleShuffle,
-                onToggleWordAudio = vm::toggleWordAudio
+                onToggleAutoPlay = vm::toggleAutoPlay
             )
 
             TtsWarning(show = state.ttsError)
@@ -277,7 +277,7 @@ private fun SwipeableCard(
                         }
                     )
                 },
-            onTap = { vm.playCurrentCardAudio() }
+            onTap = { vm.playCurrentCardAudio(force = true) }
         )
     }
 }
@@ -419,15 +419,23 @@ private fun FlashcardView(
                 }
             }
 
-            Text(
-                text = "點擊卡片發音",
-                fontSize = 10.sp,
-                color = Slate500,
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp),
-                textAlign = TextAlign.End
-            )
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "← → 滑動切換",
+                    fontSize = 10.sp,
+                    color = Slate500
+                )
+                Text(
+                    text = "點擊卡片發音",
+                    fontSize = 10.sp,
+                    color = Slate500
+                )
+            }
         }
     }
 }
@@ -511,12 +519,12 @@ private fun AudioButton(enabled: Boolean, onClick: () -> Unit) {
 private fun SettingsPanel(
     showRomaji: Boolean,
     isShuffle: Boolean,
-    wordAudioEnabled: Boolean,
+    autoPlayEnabled: Boolean,
     currentIndex: Int,
     total: Int,
     onToggleRomaji: () -> Unit,
     onToggleShuffle: () -> Unit,
-    onToggleWordAudio: () -> Unit
+    onToggleAutoPlay: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -529,7 +537,7 @@ private fun SettingsPanel(
     ) {
         SettingsRow("顯示羅馬拼音", showRomaji, onToggleRomaji)
         SettingsRow("隨機模式",     isShuffle,  onToggleShuffle)
-        SettingsRow("單字發音",     wordAudioEnabled, onToggleWordAudio)
+        SettingsRow("自動發音",     autoPlayEnabled, onToggleAutoPlay)
 
         HorizontalDivider(
             modifier = Modifier.padding(top = 10.dp, bottom = 6.dp),

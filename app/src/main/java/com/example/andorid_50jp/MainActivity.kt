@@ -1,7 +1,6 @@
 package com.example.andorid_50jp
 
 import android.os.Bundle
-import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -34,20 +33,5 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Volume keys / Bluetooth page-turner support
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_VOLUME_UP,
-            KeyEvent.KEYCODE_PAGE_UP -> {
-                vm.prevCard()
-                true
-            }
-            KeyEvent.KEYCODE_VOLUME_DOWN,
-            KeyEvent.KEYCODE_PAGE_DOWN -> {
-                vm.nextCard()
-                true
-            }
-            else -> super.onKeyDown(keyCode, event)
-        }
-    }
+
 }

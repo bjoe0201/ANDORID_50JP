@@ -1,5 +1,6 @@
 package com.example.andorid_50jp.ui
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -63,6 +66,7 @@ import com.example.andorid_50jp.ui.theme.Slate600
 import com.example.andorid_50jp.ui.theme.Slate700
 import com.example.andorid_50jp.ui.theme.Slate800
 import com.example.andorid_50jp.ui.theme.White
+import com.example.andorid_50jp.viewmodel.FlashcardUiState
 import com.example.andorid_50jp.viewmodel.FlashcardViewModel
 import com.example.andorid_50jp.viewmodel.KanaMode
 import com.example.andorid_50jp.viewmodel.currentItem
@@ -71,21 +75,154 @@ import kotlinx.coroutines.delay
 @Composable
 fun FlashcardScreen(vm: FlashcardViewModel = viewModel()) {
     val state by vm.uiState.collectAsState()
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    if (isLandscape) {
+        LandscapeLayout(state = state, vm = vm)
+    } else {
+        PortraitLayout(state = state, vm = vm)
+    }
+}
+
+// ── Portrait layout ────────────────────────────────────────────────────────────
+
+@Composable
+private fun PortraitLayout(
+    state: FlashcardUiState,
+    vm: FlashcardViewModel
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF0F4F8))
     ) {
-        // ── Header ────────────────────────────────────────────────────────────
-        Box(
+        // Header
+        AppHeader(compact = false)
+
+        // Scrollable body
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(listOf(Blue500, Indigo600))
-                )
-                .padding(horizontal = 24.dp, vertical = 20.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ModeToggle(mode = state.mode, onModeChange = vm::setMode, modifier = Modifier.weight(1f))
+                AudioButton(enabled = state.audioEnabled, onClick = vm::toggleAudio)
+            }
+
+            SwipeableCard(state = state, vm = vm, cardFontSize = 80)
+
+            NavButtons(vm = vm, buttonHeight = 52)
+
+            SettingsPanel(
+                showRomaji = state.showRomaji,
+                isShuffle = state.isShuffle,
+                wordAudioEnabled = state.wordAudioEnabled,
+                currentIndex = state.currentIndex,
+                total = state.displayOrder.size,
+                onToggleRomaji = vm::toggleRomaji,
+                onToggleShuffle = vm::toggleShuffle,
+                onToggleWordAudio = vm::toggleWordAudio
+            )
+
+            TtsWarning(show = state.ttsError)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+// ── Landscape layout ───────────────────────────────────────────────────────────
+
+@Composable
+private fun LandscapeLayout(
+    state: FlashcardUiState,
+    vm: FlashcardViewModel
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF0F4F8))
+    ) {
+        // Left: compact header + card
+        Column(
+            modifier = Modifier
+                .weight(1.1f)
+                .fillMaxHeight()
+        ) {
+            AppHeader(compact = true)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp, end = 8.dp, bottom = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                SwipeableCard(state = state, vm = vm, cardFontSize = 48)
+            }
+        }
+
+        // Right: controls (scrollable)
+        Column(
+            modifier = Modifier
+                .weight(0.9f)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 8.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ModeToggle(mode = state.mode, onModeChange = vm::setMode, modifier = Modifier.weight(1f))
+                AudioButton(enabled = state.audioEnabled, onClick = vm::toggleAudio)
+            }
+
+            NavButtons(vm = vm, buttonHeight = 44)
+
+            SettingsPanel(
+                showRomaji = state.showRomaji,
+                isShuffle = state.isShuffle,
+                wordAudioEnabled = state.wordAudioEnabled,
+                currentIndex = state.currentIndex,
+                total = state.displayOrder.size,
+                onToggleRomaji = vm::toggleRomaji,
+                onToggleShuffle = vm::toggleShuffle,
+                onToggleWordAudio = vm::toggleWordAudio
+            )
+
+            TtsWarning(show = state.ttsError)
+        }
+    }
+}
+
+// ── Shared sub-composables ─────────────────────────────────────────────────────
+
+@Composable
+private fun AppHeader(compact: Boolean) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.horizontalGradient(listOf(Blue500, Indigo600)))
+            .padding(
+                horizontal = 24.dp,
+                vertical = if (compact) 8.dp else 20.dp
+            )
+    ) {
+        if (compact) {
+            Text(
+                text = "🎌 五十音聯想練習",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = White
+            )
+        } else {
             Column {
                 Text(
                     text = "🎌 五十音聯想練習",
@@ -101,132 +238,88 @@ fun FlashcardScreen(vm: FlashcardViewModel = viewModel()) {
                 )
             }
         }
+    }
+}
 
-        // ── Scrollable body ───────────────────────────────────────────────────
-        Column(
+@Composable
+private fun SwipeableCard(
+    state: FlashcardUiState,
+    vm: FlashcardViewModel,
+    cardFontSize: Int
+) {
+    var totalDrag by remember { mutableFloatStateOf(0f) }
+    AnimatedContent(
+        targetState = state.currentIndex to state.navDirection,
+        transitionSpec = {
+            val dir = targetState.second
+            slideInHorizontally(initialOffsetX = { it * dir }, animationSpec = tween(250)) togetherWith
+                slideOutHorizontally(targetOffsetX = { -it * dir }, animationSpec = tween(250))
+        },
+        label = "cardTransition"
+    ) { (_, _) ->
+        FlashcardView(
+            item = state.currentItem,
+            mode = state.mode,
+            showRomaji = state.showRomaji,
+            charFontSize = cardFontSize,
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // Mode toggle + audio button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ModeToggle(
-                    mode = state.mode,
-                    onModeChange = vm::setMode,
-                    modifier = Modifier.weight(1f)
-                )
-                AudioButton(
-                    enabled = state.audioEnabled,
-                    onClick = vm::toggleAudio
-                )
-            }
-
-            // Flashcard with swipe
-            var totalDrag by remember { mutableFloatStateOf(0f) }
-            AnimatedContent(
-                targetState = state.currentIndex to state.navDirection,
-                transitionSpec = {
-                    val dir = targetState.second
-                    slideInHorizontally(
-                        initialOffsetX = { it * dir },
-                        animationSpec = tween(250)
-                    ) togetherWith slideOutHorizontally(
-                        targetOffsetX = { -it * dir },
-                        animationSpec = tween(250)
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { totalDrag = 0f },
+                        onHorizontalDrag = { _, delta -> totalDrag += delta },
+                        onDragEnd = {
+                            when {
+                                totalDrag < -80 -> vm.nextCard()
+                                totalDrag > 80  -> vm.prevCard()
+                            }
+                            totalDrag = 0f
+                        }
                     )
                 },
-                label = "cardTransition"
-            ) { (_, _) ->
-                FlashcardView(
-                    item = state.currentItem,
-                    mode = state.mode,
-                    showRomaji = state.showRomaji,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .pointerInput(Unit) {
-                            detectHorizontalDragGestures(
-                                onDragStart = { totalDrag = 0f },
-                                onHorizontalDrag = { _, delta -> totalDrag += delta },
-                                onDragEnd = {
-                                    when {
-                                        totalDrag < -80 -> vm.nextCard()
-                                        totalDrag > 80  -> vm.prevCard()
-                                    }
-                                    totalDrag = 0f
-                                }
-                            )
-                        },
-                    onTap = { vm.playCurrentCardAudio() }
-                )
-            }
+            onTap = { vm.playCurrentCardAudio() }
+        )
+    }
+}
 
-            // Navigation buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = vm::prevCard,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Slate100,
-                        contentColor = Slate600
-                    )
-                ) {
-                    Text("← 上一個", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                }
-                Button(
-                    onClick = vm::nextCard,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Blue600,
-                        contentColor = White
-                    )
-                ) {
-                    Text("下一個 →", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                }
-            }
-
-            // Settings panel
-            SettingsPanel(
-                showRomaji = state.showRomaji,
-                isShuffle = state.isShuffle,
-                wordAudioEnabled = state.wordAudioEnabled,
-                currentIndex = state.currentIndex,
-                total = state.displayOrder.size,
-                onToggleRomaji = vm::toggleRomaji,
-                onToggleShuffle = vm::toggleShuffle,
-                onToggleWordAudio = vm::toggleWordAudio
-            )
-
-            // TTS warning
-            if (state.ttsError) {
-                Text(
-                    text = "⚠️ 提示：若無聲音，請至系統設定 → 語言與輸入 → 文字轉語音，安裝「日文」語音包。",
-                    fontSize = 11.sp,
-                    color = Color(0xFF92400E),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFFEF3C7), RoundedCornerShape(12.dp))
-                        .padding(12.dp),
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
+@Composable
+private fun NavButtons(vm: FlashcardViewModel, buttonHeight: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(
+            onClick = vm::prevCard,
+            modifier = Modifier.weight(1f).height(buttonHeight.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Slate100, contentColor = Slate600)
+        ) {
+            Text("← 上一個", fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
+        Button(
+            onClick = vm::nextCard,
+            modifier = Modifier.weight(1f).height(buttonHeight.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Blue600, contentColor = White)
+        ) {
+            Text("下一個 →", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        }
+    }
+}
+
+@Composable
+private fun TtsWarning(show: Boolean) {
+    if (show) {
+        Text(
+            text = "⚠️ 提示：若無聲音，請至系統設定 → 語言與輸入 → 文字轉語音，安裝「日文」語音包。",
+            fontSize = 11.sp,
+            color = Color(0xFF92400E),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFFEF3C7), RoundedCornerShape(12.dp))
+                .padding(12.dp),
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -237,6 +330,7 @@ private fun FlashcardView(
     item: KanaItem,
     mode: KanaMode,
     showRomaji: Boolean,
+    charFontSize: Int = 80,
     modifier: Modifier = Modifier,
     onTap: () -> Unit
 ) {
@@ -267,7 +361,7 @@ private fun FlashcardView(
             val displayChar = if (mode == KanaMode.HIRAGANA) item.hira else item.kata
             Text(
                 text = displayChar,
-                fontSize = 80.sp,
+                fontSize = charFontSize.sp,
                 fontWeight = FontWeight.Bold,
                 color = Slate800,
                 textAlign = TextAlign.Center
